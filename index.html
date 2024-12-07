@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landmark 81 - GeoJSON Layer</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #toolbar {
+            position: absolute;
+            bottom: 10px;
+            /* Cách đỉnh màn hình 10px */
+            left: 50%;
+            transform: translateX(-50%);
+            /* Dịch chuyển ngang để căn giữa */
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #0079c1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background-color: #005a8f;
+        }
+
+        .btn:disabled {
+            background-color: green;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+    <div id="toolbar">
+        <div class="label">Chế độ xem:</div>
+        <button class="btn" disabled>GeoJSON</button>
+        <button class="btn" onclick="window.location.href='index_model.html'">3D Model</button>
+
+    </div>
+    <script src="https://js.arcgis.com/4.27/"></script>
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/SceneView",
+            "esri/layers/GeoJSONLayer",
+            "esri/layers/SceneLayer",
+            "esri/layers/GraphicsLayer",
+            "esri/geometry/Mesh",
+            "esri/geometry/Point",
+            "esri/Graphic",
+            "esri/request",
+        ], (Map, SceneView, GeoJSONLayer, SceneLayer,
+            GraphicsLayer, Mesh, Point, Graphic, esriRequest) => {
+
+
+            const map = new Map({
+                basemap: "topo-vector",
+                ground: "null"
+            });
+
+            // Tạo SceneView
+            const view = new SceneView({
+                container: "viewDiv",
+                map: map,
+                camera: {
+                    position: {
+                        x: 106.72290176950247,
+                        y: 10.775041677017837,
+                        z: 600
+                    },
+                    tilt: 80
+
+                }
+            });
+
+
+            var createGraphic = function (data) {
+                return new Graphic({
+                    geometry: data,
+                    symbol: data.symbol,
+                    attributes: data,
+                    popupTemplate: data.popupTemplate
+                });
+            };
+
+
+            const json_options = {
+                query: {
+                    f: "json"
+                },
+                responseType: "json"
+            };
+
+
+
+            // Tạo GeoJSONLayer cho các phòng chung
+            const commonRoomsLayer = new GeoJSONLayer({
+                url: "./layer/layerphong.geojson", // Đường dẫn đến tệp GeoJSON đã tạo
+                renderer: {
+                    type: "simple",
+                    symbol: {
+                        type: "polygon-3d",
+                        symbolLayers: [
+                            {
+                                type: "extrude",
+                                size: 6,
+                                material: {
+                                    color: [192, 192, 192]
+                                },
+                                edges: {
+                                    type: "solid",
+                                    color: [19, 62, 135, 0.3],
+                                    width: 1
+                                }
+                            }
+                        ]
+                    }
+                },
+                popupTemplate: {
+                    title: "{name} - Floor {floor}",
+                    content: "Height: {height} meters"
+                }
+            });
+
+            const layer2 = new GeoJSONLayer({
+                url: "./layer/layerphong2.geojson"
+            });
+
+            layer2.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [137, 168, 178, 0.8]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [19, 62, 135, 0.3],
+                                width: 2
+                            }
+                        }
+                    ]
+                }
+            };
+
+            const layer3 = new GeoJSONLayer({
+                url: "./layer/layerphong3.geojson"
+            });
+
+            layer3.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [137, 168, 178, 0.9]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [19, 62, 135, 0.3],
+                                width: 2
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer3.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+
+
+            const layer4 = new GeoJSONLayer({
+                url: "./layer/layerphong4.geojson"
+            });
+
+            layer4.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [102, 178, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [0, 51, 102, 1],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer4.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer5 = new GeoJSONLayer({
+                url: "./layer/layerphong5.geojson"
+            });
+
+            layer5.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [102, 178, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [0, 51, 102, 1],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer5.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer6 = new GeoJSONLayer({
+                url: "./layer/layerphong6.geojson"
+            });
+
+            layer6.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [102, 178, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [0, 51, 102, 1],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer6.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer7 = new GeoJSONLayer({
+                url: "./layer/layerphong7.geojson"
+            });
+
+            layer7.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [102, 178, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [0, 51, 102, 1],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer7.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer8 = new GeoJSONLayer({
+                url: "./layer/layerphong8.geojson"
+            });
+
+            layer8.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [102, 178, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [0, 51, 102, 1],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer8.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer9 = new GeoJSONLayer({
+                url: "./layer/layerphong9.geojson"
+            });
+
+            layer9.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [102, 178, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [0, 51, 102, 1],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer9.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer10 = new GeoJSONLayer({
+                url: "./layer/layerphong10.geojson"
+            });
+
+            layer10.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 255, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [19, 62, 135, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer10.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer11 = new GeoJSONLayer({
+                url: "./layer/layerphong11.geojson"
+            });
+
+            layer11.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 255, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [19, 62, 135, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer11.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer12 = new GeoJSONLayer({
+                url: "./layer/layerphong12.geojson"
+            });
+
+            layer12.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 255, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [19, 62, 135, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer12.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer13 = new GeoJSONLayer({
+                url: "./layer/layerphong13.geojson"
+            });
+
+            layer13.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 255, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [19, 62, 135, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer13.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer14 = new GeoJSONLayer({
+                url: "./layer/layerphong14.geojson"
+            });
+
+            layer14.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 255, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [19, 62, 135, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer14.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer15 = new GeoJSONLayer({
+                url: "./layer/layerphong15.geojson"
+            });
+
+            layer15.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 51, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [255, 255, 255, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer15.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer16 = new GeoJSONLayer({
+                url: "./layer/layerphong16.geojson"
+            });
+
+            layer16.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 51, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [255, 255, 255, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer16.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer17 = new GeoJSONLayer({
+                url: "./layer/layerphong17.geojson"
+            });
+
+            layer17.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 51, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [255, 255, 255, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer17.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer18 = new GeoJSONLayer({
+                url: "./layer/layerphong18.geojson"
+            });
+
+            layer18.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 51, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [255, 255, 255, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer18.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer19 = new GeoJSONLayer({
+                url: "./layer/layerphong19.geojson"
+            });
+
+            layer19.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 51, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [255, 255, 255, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer19.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer20 = new GeoJSONLayer({
+                url: "./layer/layerphong20.geojson"
+            });
+
+            layer20.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 51, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [255, 255, 255, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer20.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const layer21 = new GeoJSONLayer({
+                url: "./layer/layerphong21.geojson"
+            });
+
+            layer21.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 5,
+                            material: {
+                                color: [255, 51, 255, 0.7]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [255, 255, 255, 0.7],
+                                width: 3
+                            }
+                        }
+                    ]
+                }
+            };
+
+            layer21.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const dinh = new GeoJSONLayer({
+                url: "./layer/layerdinh.geojson"
+            });
+
+            dinh.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 62,
+                            material: {
+                                color: [255, 255, 255, 0.95]
+                            }
+                            // ,
+                            // edges: {
+                            //     type: "solid",
+                            //     color: [19, 62, 135, 0.7],
+                            //     width: 5
+                            // }
+                        }
+                    ]
+                }
+            };
+
+            dinh.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+
+            const cuaso1 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer1.geojson"
+            });
+
+            cuaso1.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [255, 255, 100, 0.8] },
+                            width: 1// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso1.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso2 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer2.geojson"
+            });
+
+            cuaso2.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 0.8] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso2.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso3 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer3.geojson"
+            });
+
+            cuaso3.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso3.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso4 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer4.geojson"
+            });
+
+            cuaso4.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso4.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso5 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer5.geojson"
+            });
+
+            cuaso5.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso5.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso6 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer6.geojson"
+            });
+
+            cuaso6.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso6.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso7 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer7.geojson"
+            });
+
+            cuaso7.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso7.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso8 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer8.geojson"
+            });
+
+            cuaso8.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso8.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso9 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer9.geojson"
+            });
+
+            cuaso9.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso9.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+            const cuaso10 = new GeoJSONLayer({
+                url: "./cuasongang/cuasolayer10.geojson"
+            });
+
+            cuaso10.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "line-3d",
+                    symbolLayers: [
+                        {
+                            type: "path",
+                            profile: "quad",
+                            material: { color: [0, 51, 102, 1] },
+                            width: 0.6// Lấy độ dày từ thuộc tính GeoJSON
+                        }
+                    ]
+                }
+            };
+
+
+            cuaso10.elevationInfo = {
+                mode: "absolute-height",
+                featureExpressionInfo: {
+                    expression: "$feature.z" // Truy cập giá trị z từ `properties`
+                }
+            };
+
+
+
+
+            // front window
+            const hoboi = new GeoJSONLayer({
+                url: "./hoboi/hoboi.geojson"
+            });
+
+            hoboi.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "polygon-3d",
+                    symbolLayers: [
+                        {
+                            type: "extrude",
+                            size: 0.5,
+                            material: {
+                                color: [0, 255, 255]
+                            },
+                            edges: {
+                                type: "solid",
+                                color: [0, 0, 0, 0.3],
+                                width: 1
+                            }
+                        }
+                    ]
+                }
+            };
+
+
+
+
+            // Thêm lớp GeoJSON vào bản đồ
+
+            map.add(commonRoomsLayer);
+            // map.add(cua_so_ngang_tang_1);
+            // map.add(cuasotang1);
+            map.add(hoboi);
+            map.add(layer2);
+            map.add(layer3);
+            map.add(layer4);
+            map.add(layer5);
+            map.add(layer6);
+            map.add(layer7);
+            map.add(layer8);
+            map.add(layer9);
+            map.add(layer10);
+            map.add(layer11);
+            map.add(layer12);
+            map.add(layer13);
+            map.add(layer14);
+            map.add(layer15);
+            map.add(layer16);
+            map.add(layer17);
+            map.add(layer18);
+            map.add(layer19);
+            map.add(layer20);
+            map.add(layer21);
+            map.add(dinh);
+            map.add(cuaso1);
+            map.add(cuaso2);
+            map.add(cuaso3);
+            map.add(cuaso4);
+            map.add(cuaso5);
+            map.add(cuaso6);
+            map.add(cuaso7);
+            map.add(cuaso8);
+            map.add(cuaso9);
+            map.add(cuaso10);
+
+
+            const sketchLayer = new GraphicsLayer({
+                elevationInfo: {
+                    mode: "absolute-height"
+                },
+                title: "Sketched geometries"
+            });
+
+            esriRequest('./data.json', json_options).then(function (response) {
+                var graphicsLayer = new GraphicsLayer();
+                console.log(response);
+                response.data.forEach(function (data) {
+                    graphicsLayer.add(createGraphic(data));
+                });
+                map.add(graphicsLayer);
+
+
+                const house = new Point({
+                    x: 106.72140829115597,
+                    y: 10.794629130082669,
+                    z: 0,
+                })
+
+                Mesh.createFromGLTF(house, "./mesh/Entrance.glb")
+                    .then(function (geometry) {
+                        geometry.scale(1.2, { origin: house })
+
+                        geometry.rotate(0, 0, -53); // Rotate 30 degrees on the X-axis
+                        const graphic = new Graphic({
+                            geometry,
+                            symbol: {
+                                type: "mesh-3d",
+                                symbolLayers: [{
+                                    type: "fill",
+                                    size: 10000
+                                }]
+                            }
+                        });
+                        sketchLayer.add(graphic)
+                    })
+                    .catch(console.error);
+
+                const pool = new Point({
+                    x: 106.72167580182759,
+                    y: 10.794574823754004,
+                    z: 18.3,
+                })
+
+                Mesh.createFromGLTF(pool, "./mesh/pool.glb")
+                    .then(function (geometry) {
+                        geometry.scale(0.9, { origin: pool })
+
+                        geometry.rotate(0, 0, 36); // Rotate 30 degrees on the X-axis
+                        const graphic = new Graphic({
+                            geometry,
+                            symbol: {
+                                type: "mesh-3d",
+                                symbolLayers: [{
+                                    type: "fill",
+                                    size: 10000
+                                }]
+                            }
+                        });
+                        sketchLayer.add(graphic)
+                    })
+                    .catch(console.error);
+
+                const cafe = new Point({
+                    x: 106.72151997046109,
+                    y: 10.79469532873675,
+                    z: 12.3,
+                })
+
+                Mesh.createFromGLTF(cafe, "./mesh/cafe.glb")
+                    .then(function (geometry) {
+                        geometry.scale(2, { origin: cafe })
+
+                        geometry.rotate(0, 0, 127); // Rotate 30 degrees on the X-axis
+                        const graphic = new Graphic({
+                            geometry,
+                            symbol: {
+                                type: "mesh-3d",
+                                symbolLayers: [{
+                                    type: "fill",
+                                    size: 10000
+                                }]
+                            }
+                        });
+                        sketchLayer.add(graphic)
+                    })
+                    .catch(console.error);
+
+
+                const rooftop = new Point({
+                    x: 106.72184394436772,
+                    y: 10.794356894553786,
+                    z: 12,
+                })
+
+                Mesh.createFromGLTF(rooftop, "./mesh/ROOFTOP_RESTAURANT.glb")
+                    .then(function (geometry) {
+                        geometry.scale(1.5, { origin: rooftop })
+
+                        geometry.rotate(0, 0, 36); // Rotate 30 degrees on the X-axis
+                        const graphic = new Graphic({
+                            geometry,
+                            symbol: {
+                                type: "mesh-3d",
+                                symbolLayers: [{
+                                    type: "fill",
+                                    size: 10000
+                                }]
+                            }
+                        });
+                        sketchLayer.add(graphic)
+                    })
+                    .catch(console.error);
+
+                const tree = new Point({
+                    x: 106.72175467017018,
+                    y: 10.794426884769436,
+                    z: 12,
+                })
+
+                Mesh.createFromGLTF(tree, "./mesh/Christmas_Tree.glb")
+                    .then(function (geometry) {
+                        geometry.scale(10, { origin: tree })
+
+                        geometry.rotate(0, 0, 36); // Rotate 30 degrees on the X-axis
+                        const graphic = new Graphic({
+                            geometry,
+                            symbol: {
+                                type: "mesh-3d",
+                                symbolLayers: [{
+                                    type: "fill",
+                                    size: 10000
+                                }]
+                            }
+                        });
+                        sketchLayer.add(graphic)
+                    })
+                    .catch(console.error);
+
+                const flag = new Point({
+                    x: 106.72181844781437,
+                    y: 10.795091122019372,
+                    z: 470,
+                })
+
+                Mesh.createFromGLTF(flag, "./mesh/VietnamFlag.glb")
+                    .then(function (geometry) {
+                        geometry.scale(1.5, { origin: flag })
+
+                        geometry.rotate(0, 0, 150); // Rotate 30 degrees on the X-axis
+                        const graphic = new Graphic({
+                            geometry,
+                            symbol: {
+                                type: "mesh-3d",
+                                symbolLayers: [{
+                                    type: "fill",
+                                    size: 10000
+                                }]
+                            }
+                        });
+                        sketchLayer.add(graphic)
+                    })
+                    .catch(console.error);
+
+
+
+                map.add(sketchLayer);
+
+            });
+
+
+            view.popup.defaultPopupTemplateEnabled = true;
+            view.popup.dockEnabled = true;
+            view.popup.dockOptions = {
+                position: "top-right",
+                buttonEnabled: false, // Tắt nút di chuyển popup
+                breakpoint: false // Luôn hiển thị ở góc phải trên
+            };
+
+            view.on("click", function (event) {
+                view.hitTest(event).then(function (hitTestResults) {
+                    if (hitTestResults.results) {
+                        list_points.push([event.mapPoint.longitude, event.mapPoint.latitude]);
+                        string_points += "[" + event.mapPoint.longitude + ", " + event.mapPoint.latitude + "],";
+                        copyTextToClipboard(string_points);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
